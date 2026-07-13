@@ -10,6 +10,37 @@ This document explains the three main quantization/export entrypoints in `QuantP
 
 The repo's flow is: start from the FP32 PDL checkpoint, prepare a representative calibration set, and export an INT8-ready model for deployment or further evaluation. In our current setting, AIMET is enough, other quantize library is for experiment only. This doc explains how to run the QuantPDL AIMET flow on a regular GPU server, from environment setup to generating a quantized model.
 
+## AIMET workflow summary (updated)
+
+1. Load the pre-trained FP32 PDL model.
+   - `build_sim_quantized_pdl.py` loads weights from `--weights_path` (default: `weights/model_final_bd324a.pkl`).
+2. Prepare calibration dataset.
+   - Use `--calib_images`, `--num_calib`, `--calib_size`, and `--seed`.
+3. Apply Cross-Layer Equalization (CLE) for better quantization.
+   - Enable with `--enable_cle`.
+4. Create a QuantizationSimModel (Post-Training Quantization).
+   - Built internally after model wrapping/folding.
+5. Calibrate the quantized model.
+   - Encodings are computed using calibration forward pass.
+6. Compare FP32 vs INT8 outputs.
+   - Run evaluation using `run_eval.py` with both `--fp32_weights` and `--quant_weights`.
+   - Example:
+
+```bash
+python run_eval.py \
+  --cityscapes_root "${CITYSCAPES_DIR}" \
+  --fp32_weights "${REPO_ROOT}/weights/model_final_bd324a.pkl" \
+  --quant_weights "${QUANT_OUT_DIR}/sim_export/panoptic_deeplab_int8.onnx" \
+  --model_category PANOPTIC_DEEPLAB \
+  --split val \
+  --max_samples 100
+```
+
+7. Experiment on advanced quantization techniques.
+   - Optional switches: `--enable_bn_fold`, `--enable_adaround`, `--enable_seq_mse`, `--enable_bn_reestimation`, `--run_quant_analyzer`.
+8. Export the quantized model.
+   - ONNX and AIMET export artifacts are written to `--export_path` unless `--no_export` is used.
+
 ## 1) Paths used in this doc
 
 Use these defaults from your current workspace:
@@ -87,7 +118,6 @@ python build_sim_quantized_pdl.py \
   --num_calib 50 \
   --calib_size 50 \
   --export_path "${QUANT_OUT_DIR}" \
-  --save_quant_checkpoint "${CKPT_DIR}/panoptic_deeplab_int8_state_dict.pkl" \
   --device cuda \
   --enable_custom_conv_bn_fold \
   --config_file "${REPO_ROOT}/config/fully_symmetric.json" \
@@ -100,8 +130,6 @@ python build_sim_quantized_pdl.py \
 Main artifacts are written to:
 
 - Quantized export: `${QUANT_OUT_DIR}`
-- Sim export artifacts: `${QUANT_OUT_DIR}/sim_export`
-- Serialized AIMET checkpoint: `${CKPT_DIR}/panoptic_deeplab_int8_state_dict.pkl`
 
 ## 9) Common issues
 

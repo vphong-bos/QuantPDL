@@ -1,6 +1,7 @@
 quantized_model
 neural-compressor
 cityscapes
+weights/*.pkl
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -25,7 +25,7 @@ from utils.image_loader import load_images
 
 from evaluation.eval_dataset import build_eval_loader
 from evaluation.eval_metrics import evaluate_model
-from secret_incrediants.fold_conv_bn import count_custom_conv_with_bn, fold_custom_conv_bn_inplace, debug_remaining_custom_conv_with_bn
+from preprocessing.fold_conv_bn import count_custom_conv_with_bn, fold_custom_conv_bn_inplace, debug_remaining_custom_conv_with_bn
 
 from aimet_torch.batch_norm_fold import fold_all_batch_norms, fold_all_batch_norms_to_scale
 from aimet_torch.cross_layer_equalization import equalize_model
@@ -389,8 +389,6 @@ def main(args):
 
             debug_remaining_custom_conv_with_bn(model, max_items=20)
 
-    torch.save(model.state_dict(), "model.pth")
-
     print("Collecting calibration images...")
     all_calib_images = load_images(args.calib_images, num_iters=-1, recursive=True)
     unique_calib_images = dedupe_image_paths(all_calib_images)
@@ -739,15 +737,15 @@ def main(args):
 
         print(f"Exported QDQ ONNX to: {onnx_path}")
 
-        sim_export_dir = f"{args.export_path}/sim_export"
-        os.makedirs(sim_export_dir, exist_ok=True)
-        print(f"Exporting AIMET artifacts to: {sim_export_dir}")
-        sim.export(
-            path=sim_export_dir,
-            filename_prefix=args.export_prefix,
-            dummy_input=dummy_input,
-        )
-        print("AIMET export completed successfully.")
+        # sim_export_dir = f"{args.export_path}/sim_export"
+        # os.makedirs(sim_export_dir, exist_ok=True)
+        # print(f"Exporting AIMET artifacts to: {sim_export_dir}")
+        # sim.export(
+        #     path=sim_export_dir,
+        #     filename_prefix=args.export_prefix,
+        #     dummy_input=dummy_input,
+        # )
+        # print("AIMET export completed successfully.")
 
     # if not args.no_operation_orient:
     #     print("Exporting operation orient quantized model to ONNX QDQ...")
