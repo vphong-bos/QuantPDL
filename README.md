@@ -10,7 +10,7 @@ This document explains the three main quantization/export entrypoints in `QuantP
 
 The repo's flow is: start from the FP32 PDL checkpoint, prepare a representative calibration set, and export an INT8-ready model for deployment or further evaluation. In our current setting, AIMET is enough, other quantize library is for experiment only. This doc explains how to run the QuantPDL AIMET flow on a regular GPU server, from environment setup to generating a quantized model.
 
-## AIMET workflow summary (updated)
+## AIMET workflow summary
 
 1. Load the pre-trained FP32 PDL model.
    - `build_sim_quantized_pdl.py` loads weights from `--weights_path` (default: `weights/model_final_bd324a.pkl`).
@@ -24,17 +24,6 @@ The repo's flow is: start from the FP32 PDL checkpoint, prepare a representative
    - Encodings are computed using calibration forward pass.
 6. Compare FP32 vs INT8 outputs.
    - Run evaluation using `run_eval.py` with both `--fp32_weights` and `--quant_weights`.
-   - Example:
-
-```bash
-python run_eval.py \
-  --cityscapes_root "${CITYSCAPES_DIR}" \
-  --fp32_weights "${REPO_ROOT}/weights/model_final_bd324a.pkl" \
-  --quant_weights "${QUANT_OUT_DIR}/sim_export/panoptic_deeplab_int8.onnx" \
-  --model_category PANOPTIC_DEEPLAB \
-  --split val \
-  --max_samples 100
-```
 
 7. Experiment on advanced quantization techniques.
    - Optional switches: `--enable_bn_fold`, `--enable_adaround`, `--enable_seq_mse`, `--enable_bn_reestimation`, `--run_quant_analyzer`.
@@ -57,10 +46,9 @@ If you want different locations, update the variables in Step 2.
 
 ```bash
 export REPO_ROOT="/workspace/quant_pipeline/QuantPDL"
-export WORK_DIR="/workspace/quant_pipeline"
-export CITYSCAPES_DIR="${WORK_DIR}/cityscapes"
-export QUANT_OUT_DIR="${WORK_DIR}/quantized_model"
-export CKPT_DIR="${WORK_DIR}/checkpoint"
+export CITYSCAPES_DIR="${REPO_ROOT}/cityscapes"
+export QUANT_OUT_DIR="${REPO_ROOT}/quantized_model"
+export CKPT_DIR="${REPO_ROOT}/checkpoint"
 ```
 
 ## 3) Setup dependencies and baseline FP32 weights
@@ -81,8 +69,8 @@ Important:
 - The downloader may prompt for username/password in terminal on first run.
 
 ```bash
-python "${REPO_ROOT}/quantization/downloader.py" -d "${WORK_DIR}" leftImg8bit_trainvaltest.zip
-python "${REPO_ROOT}/quantization/downloader.py" -d "${WORK_DIR}" gtFine_trainvaltest.zip
+python "${REPO_ROOT}/quantization/downloader.py" -d "${REPO_ROOT}" leftImg8bit_trainvaltest.zip
+python "${REPO_ROOT}/quantization/downloader.py" -d "${REPO_ROOT}" gtFine_trainvaltest.zip
 ```
 
 ## 5) Extract required Cityscapes folders
@@ -90,12 +78,12 @@ python "${REPO_ROOT}/quantization/downloader.py" -d "${WORK_DIR}" gtFine_trainva
 ```bash
 mkdir -p "${CITYSCAPES_DIR}"
 
-unzip -q -o "${WORK_DIR}/leftImg8bit_trainvaltest.zip" "leftImg8bit/train/*" -d "${CITYSCAPES_DIR}"
-unzip -q -o "${WORK_DIR}/leftImg8bit_trainvaltest.zip" "leftImg8bit/val/*" -d "${CITYSCAPES_DIR}"
-rm -f "${WORK_DIR}/leftImg8bit_trainvaltest.zip"
+unzip -q -o "${REPO_ROOT}/leftImg8bit_trainvaltest.zip" "leftImg8bit/train/*" -d "${CITYSCAPES_DIR}"
+unzip -q -o "${REPO_ROOT}/leftImg8bit_trainvaltest.zip" "leftImg8bit/val/*" -d "${CITYSCAPES_DIR}"
+rm -f "${REPO_ROOT}/leftImg8bit_trainvaltest.zip"
 
-unzip -q -o "${WORK_DIR}/gtFine_trainvaltest.zip" "gtFine/val/*" -d "${CITYSCAPES_DIR}"
-rm -f "${WORK_DIR}/gtFine_trainvaltest.zip"
+unzip -q -o "${REPO_ROOT}/gtFine_trainvaltest.zip" "gtFine/val/*" -d "${CITYSCAPES_DIR}"
+rm -f "${REPO_ROOT}/gtFine_trainvaltest.zip"
 ```
 
 After extraction, calibration images should exist under:
@@ -130,6 +118,17 @@ python build_sim_quantized_pdl.py \
 Main artifacts are written to:
 
 - Quantized export: `${QUANT_OUT_DIR}`
+
+Run evaluate by running
+
+```bash
+python run_eval.py \
+  --cityscapes_root "${CITYSCAPES_DIR}" \
+  --fp32_weights "${REPO_ROOT}/weights/model_final_bd324a.pkl" \
+  --quant_weights "${QUANT_OUT_DIR}/panoptic_deeplab_int8.onnx" \
+  --model_category PANOPTIC_DEEPLAB \
+  --split val
+```
 
 ## 9) Common issues
 
